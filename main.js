@@ -198,8 +198,9 @@ class TypingAnimation {
         this.isDeleting = false;
         this.typeSpeed = 100;
         this.deleteSpeed = 50;
-        this.pauseDelay = 2000;
-        
+        this.pauseDelay = 1000;
+        this.pauseAfterDelete = 200;
+        this.isPaused = false;
         this.init();
     }
 
@@ -211,7 +212,15 @@ class TypingAnimation {
 
     type() {
         const currentText = this.texts[this.currentTextIndex];
-        
+
+        if (this.isPaused) {
+            setTimeout(() => {
+                this.isPaused = false;
+                this.type();
+            }, this.pauseAfterDelete);
+            return;
+        }
+
         if (this.isDeleting) {
             this.element.textContent = currentText.substring(0, this.currentCharIndex - 1);
             this.currentCharIndex--;
@@ -228,6 +237,7 @@ class TypingAnimation {
         } else if (this.isDeleting && this.currentCharIndex === 0) {
             this.isDeleting = false;
             this.currentTextIndex = (this.currentTextIndex + 1) % this.texts.length;
+            this.isPaused = true;
         }
 
         setTimeout(() => this.type(), typeSpeed);

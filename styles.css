@@ -291,6 +291,8 @@ body {
     color: var(--text-secondary);
     margin-bottom: 1.5rem;
     font-weight: 500;
+    min-height: 2.2rem;
+    display: inline-block;
 }
 
 .hero-description {
