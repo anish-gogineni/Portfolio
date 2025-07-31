@@ -381,7 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
     new ThemeManager();
     new NavigationManager();
     new ScrollAnimations();
-    new TypingAnimation();
+    // Initialize typing animation
+    // new TypingAnimation();
     new StatsCounter();
     new TimelineAnimations();
     new ProjectInteractions();

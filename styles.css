@@ -295,6 +295,13 @@ body {
     display: inline-block;
 }
 
+.hero-subtitle-static {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
 .hero-description {
     font-size: 1.1rem;
     color: var(--text-muted);
