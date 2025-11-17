@@ -30,6 +30,7 @@
     <title>Anish Babu Gogineni - Data Engineer & AI Engineer</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <!-- JSON-LD Structured Data for SEO and AI Search Optimization -->
     <script type="application/ld+json">
@@ -537,6 +538,35 @@
             <p>&copy; 2025 Anish Babu Gogineni. Built with passion for data engineering and AI engineering.</p>
         </div>
     </footer>
+
+    <!-- Chatbot -->
+    <div class="chatbot-container" id="chatbot-container">
+        <div class="chatbot-overlay" id="chatbot-overlay"></div>
+        <div class="chatbot-window" id="chatbot-window">
+            <div class="chatbot-header">
+                <h3>Chat with me</h3>
+                <button class="chatbot-close" id="chatbot-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>Hello! I'm here to help you learn more about Anish. Feel free to ask me anything!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-input-container">
+                <input type="text" id="chatbot-input" placeholder="Type your message..." class="chatbot-input">
+                <button id="chatbot-send" class="chatbot-send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        <button class="chatbot-toggle" id="chatbot-toggle">
+            <i class="fas fa-comments"></i>
+        </button>
+    </div>
 
     <script src="main.js"></script>
 </body>

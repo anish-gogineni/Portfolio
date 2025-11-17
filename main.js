@@ -375,6 +375,225 @@ class ParallaxEffect {
     }
 }
 
+// Chatbot Management
+class ChatbotManager {
+    constructor() {
+        this.webhookUrl = 'https://n8n-production-1da8.up.railway.app/webhook/0d429d37-60da-4572-abe2-829fe4e2fecd/chat?';
+        this.chatId = this.getOrCreateChatId();
+        this.container = document.getElementById('chatbot-container');
+        this.window = document.getElementById('chatbot-window');
+        this.overlay = document.getElementById('chatbot-overlay');
+        this.toggle = document.getElementById('chatbot-toggle');
+        this.close = document.getElementById('chatbot-close');
+        this.messages = document.getElementById('chatbot-messages');
+        this.input = document.getElementById('chatbot-input');
+        this.send = document.getElementById('chatbot-send');
+        this.isOpen = false;
+        
+        this.init();
+    }
+
+    init() {
+        this.toggle.addEventListener('click', () => this.toggleWindow());
+        this.close.addEventListener('click', () => this.closeWindow());
+        this.overlay.addEventListener('click', () => this.closeWindow());
+        this.send.addEventListener('click', () => this.sendMessage());
+        this.input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+    }
+
+    getOrCreateChatId() {
+        let chatId = sessionStorage.getItem('chatbot_chatId');
+        if (!chatId) {
+            // Generate a unique chatId
+            chatId = 'chat_' + Math.random().toString(36).substring(2, 15);
+            sessionStorage.setItem('chatbot_chatId', chatId);
+        }
+        return chatId;
+    }
+
+    toggleWindow() {
+        if (this.isOpen) {
+            this.closeWindow();
+        } else {
+            this.openWindow();
+        }
+    }
+
+    openWindow() {
+        this.container.classList.add('active');
+        this.isOpen = true;
+        // Prevent body scroll when chat is open
+        document.body.style.overflow = 'hidden';
+        this.input.focus();
+    }
+
+    closeWindow() {
+        this.container.classList.remove('active');
+        this.isOpen = false;
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+
+    addMessage(text, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        
+        if (isUser) {
+            // User messages are plain text
+            const p = document.createElement('p');
+            p.textContent = text;
+            contentDiv.appendChild(p);
+        } else {
+            // Bot messages are rendered as markdown
+            if (typeof marked !== 'undefined') {
+                // Configure marked options
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                contentDiv.innerHTML = marked.parse(text);
+            } else {
+                // Fallback to plain text if marked is not loaded
+                const p = document.createElement('p');
+                p.textContent = text;
+                contentDiv.appendChild(p);
+            }
+        }
+        
+        messageDiv.appendChild(contentDiv);
+        this.messages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        this.messages.scrollTop = this.messages.scrollHeight;
+        
+        return messageDiv;
+    }
+
+    addLoadingMessage() {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message bot-message loading';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        const p = document.createElement('p');
+        p.textContent = 'Thinking';
+        contentDiv.appendChild(p);
+        
+        messageDiv.appendChild(contentDiv);
+        this.messages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        this.messages.scrollTop = this.messages.scrollHeight;
+        
+        return messageDiv;
+    }
+
+    removeLoadingMessage(loadingMessage) {
+        if (loadingMessage && loadingMessage.parentNode) {
+            loadingMessage.remove();
+        }
+    }
+
+    async sendMessage() {
+        const message = this.input.value.trim();
+        if (!message) return;
+
+        // Disable input and send button
+        this.input.disabled = true;
+        this.send.disabled = true;
+
+        // Add user message
+        this.addMessage(message, true);
+        this.input.value = '';
+
+        // Add loading message
+        const loadingMessage = this.addLoadingMessage();
+
+        try {
+            const response = await fetch(this.webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chatId: this.chatId,
+                    message: message,
+                    route: 'general'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Get response text first to check content type
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            let botResponse = 'I apologize, but I couldn\'t process that request.';
+            
+            // Try to parse as JSON
+            try {
+                const data = JSON.parse(responseText);
+                console.log('Parsed JSON data:', data);
+                
+                // Try various possible response formats
+                botResponse = data.response || 
+                             data.message || 
+                             data.text || 
+                             data.output ||
+                             data.data?.response ||
+                             data.data?.message ||
+                             data.data?.text ||
+                             (typeof data === 'string' ? data : null) ||
+                             botResponse;
+            } catch (parseError) {
+                // If not JSON, use the text directly
+                console.log('Response is not JSON, using text directly');
+                if (responseText && responseText.trim()) {
+                    botResponse = responseText.trim();
+                }
+            }
+            
+            console.log('Final bot response:', botResponse);
+            
+            // Remove loading message
+            this.removeLoadingMessage(loadingMessage);
+            
+            // Add bot response
+            this.addMessage(botResponse, false);
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack
+            });
+            
+            // Remove loading message
+            this.removeLoadingMessage(loadingMessage);
+            
+            // Add error message
+            this.addMessage('Sorry, I encountered an error. Please try again later.', false);
+        } finally {
+            // Re-enable input and send button
+            this.input.disabled = false;
+            this.send.disabled = false;
+            this.input.focus();
+        }
+    }
+}
+
 // Initialize all components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize all managers and animations
@@ -387,6 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new TimelineAnimations();
     new ProjectInteractions();
     new ContactInteractions();
+    new ChatbotManager();
     
     // Add parallax effect (optional - can be removed if too distracting)
     // new ParallaxEffect();
